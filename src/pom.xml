@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.orion</groupId>
+  <artifactId>orion-platform</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>Estoa Threat Intelligence Platform</name>
+  <description>Plataforma profesional de Threat Intelligence, Threat Hunting, Investigacion cibernetica, analisis de filtraciones, enriquecimiento de IOCs y analisis de enlaces.</description>
+
+  <developers>
+    <developer>
+      <id>mikear</id>
+      <name>mikear</name>
+      <url>https://github.com/mikear</url>
+    </developer>
+  </developers>
+
+  <modules>
+    <module>orion-core</module>
+    <module>orion-graph</module>
+    <module>orion-transform</module>
+    <module>orion-sources</module>
+    <module>orion-persistence</module>
+    <module>orion-correlation</module>
+    <module>orion-plugin</module>
+    <module>orion-intel</module>
+    <module>orion-reports</module>
+    <module>orion-app</module>
+  </modules>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring-boot.version>3.3.4</spring-boot.version>
+    <javafx.version>21.0.4</javafx.version>
+    <javafx.classifier>linux</javafx.classifier>
+    <openpdf.version>1.3.43</openpdf.version>
+    <junit.version>5.10.2</junit.version>
+  </properties>
+
+  <profiles>
+    <profile>
+      <id>windows</id>
+      <properties><javafx.classifier>win</javafx.classifier></properties>
+    </profile>
+    <profile>
+      <id>macos</id>
+      <properties><javafx.classifier>mac</javafx.classifier></properties>
+    </profile>
+  </profiles>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-core</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-graph</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-transform</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-sources</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-persistence</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-correlation</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-plugin</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-intel</artifactId><version>${project.version}</version></dependency>
+      <dependency><groupId>com.orion</groupId><artifactId>orion-reports</artifactId><version>${project.version}</version></dependency>
+      <dependency>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-base</artifactId>
+        <version>${javafx.version}</version>
+        <classifier>${javafx.classifier}</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-graphics</artifactId>
+        <version>${javafx.version}</version>
+        <classifier>${javafx.classifier}</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-controls</artifactId>
+        <version>${javafx.version}</version>
+        <classifier>${javafx.classifier}</classifier>
+      </dependency>
+      <dependency>
+        <groupId>com.github.librepdf</groupId>
+        <artifactId>openpdf</artifactId>
+        <version>${openpdf.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.5</version>
+          <configuration>
+            <argLine>-Djava.awt.headless=true</argLine>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: orion-threat-intelligence
+  main:
+    banner-mode: off
+  profiles:
+    default: h2
+
+logging:
+  level:
+    root: INFO
+    com.orion: INFO

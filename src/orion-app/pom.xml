@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.orion</groupId>
+    <artifactId>orion-platform</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <artifactId>orion-app</artifactId>
+  <name>Estoa App</name>
+  <description>Aplicacion JavaFX con tema oscuro: workspace de investigacion, canvas de grafo interactivo, paneles y menus. Fat JAR ejecutable via Spring Boot.</description>
+
+  <dependencies>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-core</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-graph</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-sources</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-transform</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-persistence</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-correlation</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-plugin</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-intel</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-reports</artifactId></dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-base</artifactId>
+      <classifier>${javafx.classifier}</classifier>
+      <exclusions>
+        <!-- el POM de OpenJFX arrastra el mismo artefacto para la plataforma del host -->
+        <exclusion><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-graphics</artifactId>
+      <classifier>${javafx.classifier}</classifier>
+      <exclusions>
+        <exclusion><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId></exclusion>
+        <exclusion><groupId>org.openjfx</groupId><artifactId>javafx-base</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <classifier>${javafx.classifier}</classifier>
+      <exclusions>
+        <exclusion><groupId>org.openjfx</groupId><artifactId>javafx-controls</artifactId></exclusion>
+        <exclusion><groupId>org.openjfx</groupId><artifactId>javafx-graphics</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>estoa</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>version.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>version.properties</include>
+        </includes>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+            <configuration>
+              <mainClass>com.orion.app.OrionApp</mainClass>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

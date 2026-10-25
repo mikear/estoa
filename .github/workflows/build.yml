@@ -1,0 +1,50 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            profile: ""
+            jar: estoa-linux.jar
+          - name: windows
+            os: windows-latest
+            profile: "-Pwindows"
+            jar: estoa.jar
+          - name: macos
+            os: macos-15-intel
+            profile: "-Pmacos"
+            jar: estoa-macos.jar
+    defaults:
+      run:
+        working-directory: src
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build
+        run: mvn -B clean package ${{ matrix.profile }}
+
+      - name: Upload fat JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.jar }}
+          path: src/orion-app/target/estoa.jar
+          if-no-files-found: error

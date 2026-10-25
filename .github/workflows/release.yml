@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+            profile: -Pwindows
+            package: powershell -NoProfile -ExecutionPolicy Bypass -File packaging/package.ps1 -RequireInstaller
+            artifact: estoa-windows
+          - name: linux
+            os: ubuntu-latest
+            profile: ''
+            package: bash packaging/package.sh
+            artifact: estoa-linux
+          - name: macos
+            os: macos-15-intel
+            profile: -Pmacos
+            package: bash packaging/package.sh
+            artifact: estoa-macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Instalar WiX 3
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install wixtoolset --version=3.14.1 -y --no-progress
+          $bin = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin' -Directory |
+            Select-Object -First 1
+          if (-not $bin) { throw 'No se encontro el directorio bin de WiX' }
+          $bin.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Dependencias Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot
+
+      - name: Build
+        working-directory: src
+        run: mvn -B clean package -DskipTests ${{ matrix.profile }}
+
+      - name: Empaquetar
+        run: ${{ matrix.package }}
+
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publicar release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generar checksums combinados
+        run: |
+          cd dist
+          find . -maxdepth 1 -type f ! -name 'SHA256SUMS*' -printf '%f\n' |
+            sort |
+            while read -r file; do sha256sum "$file"; done > SHA256SUMS.txt
+
+      - name: Crear release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes --title "Estoa $GITHUB_REF_NAME"

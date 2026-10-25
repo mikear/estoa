@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.orion</groupId>
+    <artifactId>orion-platform</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <artifactId>orion-sources</artifactId>
+  <name>Estoa Sources</name>
+  <description>Conectores de datos: DNS sobre HTTPS, RDAP, crt.sh, ip-api, Team Cymru, AbuseCH (ThreatFox/URLHaus/MalwareBazaar), Feodo, OpenPhish, ransomware.live, NVD, CISA KEV, MITRE ATT&amp;CK y APIs comerciales (VirusTotal, Shodan, urlscan) con claves cifradas AES-256-GCM.</description>
+
+  <dependencies>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-core</artifactId></dependency>
+  </dependencies>
+</project>

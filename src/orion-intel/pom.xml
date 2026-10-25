@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.orion</groupId>
+    <artifactId>orion-platform</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <artifactId>orion-intel</artifactId>
+  <name>Estoa Intel</name>
+  <description>Capa de inteligencia: orquestacion de enriquecimiento, puntuacion de riesgo, matriz ATT&amp;CK y gestion de casos.</description>
+
+  <dependencies>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-core</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-graph</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-sources</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-transform</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-persistence</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-correlation</artifactId></dependency>
+    <dependency><groupId>com.orion</groupId><artifactId>orion-plugin</artifactId></dependency>
+  </dependencies>
+</project>

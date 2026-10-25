@@ -1,0 +1,49 @@
+# Build
+target/
+dist/
+build/
+*.class
+*.jar
+*.exe
+*.msi
+*.deb
+*.rpm
+*.dmg
+*.zip
+*.tar.gz
+
+# Datos locales
+.orion/
+*.db
+*.mv.db
+*.trace.db
+keys.dat
+.keystore.key
+update.properties
+evidencias-live/
+
+# Logs y temporales
+*.log
+hs_err_pid*
+*.tmp
+__pycache__/
+*.pyc
+
+# Lanzadores legacy ligados a los JARs raíz (no se publican)
+/estoa.bat
+/estoa.sh
+
+# Entornos e IDE
+.env
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Material interno
+QA_BITACORA.md
+AGENTS.md
+/.opencode/
+/src/.serena/
+/META-INF/
