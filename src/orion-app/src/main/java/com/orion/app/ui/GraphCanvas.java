@@ -129,7 +129,7 @@ public class GraphCanvas extends Canvas {
             public void handle(long now) {
                 if (liveForce != null) {
                     boolean live = liveForce.step(graph, getWidth(), getHeight());
-                    CollisionResolver.resolve(graph, 6);
+                    CollisionResolver.resolveAdaptive(graph, 6);
                     redraw();
                     if (!live) liveForce = null;
                 }
@@ -389,8 +389,14 @@ public class GraphCanvas extends Canvas {
     }
 
     public void separate() {
-        CollisionResolver.resolve(graph, 120);
+        CollisionResolver.resolveAdaptive(graph, 120);
         redraw();
+    }
+
+    /** Detiene la animacion de fuerzas antes de una importacion masiva. */
+    public void stopLiveLayout() {
+        liveForce = null;
+        animator.stop();
     }
 
     private double activeRepulsion() {
@@ -408,7 +414,7 @@ public class GraphCanvas extends Canvas {
             default -> type.create();
         };
         layout.apply(graph, getWidth(), getHeight());
-        CollisionResolver.resolve(graph, 80);
+        CollisionResolver.resolveAdaptive(graph, 80);
         if (layout instanceof ForceDirectedLayout fdl && type == LayoutType.FORCE_DIRECTED && !grouped) {
             liveForce = fdl;
             animator.start();

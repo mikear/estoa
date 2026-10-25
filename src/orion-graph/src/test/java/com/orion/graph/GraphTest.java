@@ -72,6 +72,14 @@ class GraphTest {
     }
 
     @Test
+    void collisionResolverAdaptsIterationsToGraphSize() {
+        assertEquals(80, CollisionResolver.adaptiveIterations(100, 80));
+        assertTrue(CollisionResolver.adaptiveIterations(1000, 80) < 80);
+        assertEquals(0, CollisionResolver.adaptiveIterations(5000, 80));
+        assertEquals(0, CollisionResolver.adaptiveIterations(1, 80));
+    }
+
+    @Test
     void removingEdgeUpdatesAdjacencyWithoutRemovingNode() {
         OrionGraph g = buildSample();
         GraphEdge edge = g.edgesOf("DOMAIN:evil-example.com").get(0);

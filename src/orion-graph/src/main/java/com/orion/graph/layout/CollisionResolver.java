@@ -13,7 +13,26 @@ import java.util.List;
  */
 public final class CollisionResolver {
 
+    /** Presupuesto de comparaciones por llamada para no bloquear grafos grandes. */
+    private static final long PAIR_BUDGET = 1_500_000L;
+
     private CollisionResolver() {}
+
+    /**
+     * Iteraciones recomendadas segun el numero de nodos: mantiene acotado el
+     * trabajo O(n^2) en grafos grandes (0 si no cabe ninguna pasada).
+     */
+    public static int adaptiveIterations(int nodes, int maxIterations) {
+        if (nodes < 2 || maxIterations <= 0) return 0;
+        long pairs = (long) nodes * (nodes - 1) / 2;
+        int byBudget = (int) (PAIR_BUDGET / Math.max(1L, pairs));
+        return Math.max(0, Math.min(maxIterations, byBudget));
+    }
+
+    /** Resuelve solapamientos adaptando las iteraciones al tamano del grafo. */
+    public static void resolveAdaptive(OrionGraph g, int maxIterations) {
+        resolve(g, adaptiveIterations(g.nodeCount(), maxIterations));
+    }
 
     /** Numero de iteraciones de relajacion recomendado. */
     public static void resolve(OrionGraph g, int iterations) {

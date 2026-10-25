@@ -27,6 +27,7 @@ import com.orion.sources.SourceConnector;
 import com.orion.sources.SourceRegistry;
 import com.orion.plugin.PluginManager;
 import com.orion.transform.Transform;
+import com.orion.transform.TransformResult;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -63,6 +64,9 @@ import java.util.Optional;
  * derecho (propiedades/riesgo/ATT&amp;CK) y barra de estado.
  */
 public class MainWindow {
+
+    /** A partir de este volumen el grafo se muestra en tabla para no saturar el lienzo. */
+    private static final int LARGE_RESULT_THRESHOLD = 300;
 
     private final Stage stage;
     private final IntelService intel;
@@ -928,11 +932,12 @@ public class MainWindow {
         if (node == null) return;
         List<Transform> transforms = intel.transforms().forInput(node.getEntity().getType())
                 .stream().filter(t -> !t.requiresApiKey()).toList();
+        canvas.stopLiveLayout();
         runAsync("Enriqueciendo " + node.getEntity().getLabel(), () -> {
             for (Transform t : transforms) {
                 intel.applyTransform(key, t.id());
             }
-        }, canvas::relayout);
+        }, this::relayoutOrTable);
     }
 
     private void runAllTransformsOnSelected() {
@@ -952,11 +957,12 @@ public class MainWindow {
             showInfo("Transformaciones", "No hay transformaciones para " + node.getEntity().getType().label() + ".");
             return;
         }
+        canvas.stopLiveLayout();
         runAsync("Ejecutando " + transforms.size() + " transformaciones", () -> {
             for (Transform t : transforms) {
                 intel.applyTransform(key, t.id());
             }
-        }, canvas::relayout);
+        }, this::relayoutOrTable);
     }
 
     private void runTransformOnSelected(String transformId) {
@@ -969,7 +975,39 @@ public class MainWindow {
     }
 
     private void runTransform(String key, String transformId) {
-        runAsync("Ejecutando " + transformId, () -> intel.applyTransform(key, transformId), canvas::relayout);
+        canvas.stopLiveLayout();
+        statusRight.setText("Ejecutando " + transformId + "...");
+        Thread worker = new Thread(() -> {
+            TransformResult result;
+            try {
+                result = intel.applyTransform(key, transformId);
+            } catch (RuntimeException e) {
+                Platform.runLater(() -> statusRight.setText("Transformación fallida: " + e.getMessage()));
+                return;
+            }
+            Platform.runLater(() -> {
+                refreshAll();
+                relayoutOrTable(result.getMessage());
+            });
+        }, "orion-task");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private void relayoutOrTable() {
+        relayoutOrTable(null);
+    }
+
+    private void relayoutOrTable(String message) {
+        if (intel.getGraph().nodeCount() > LARGE_RESULT_THRESHOLD) {
+            showTable();
+            statusRight.setText(message == null
+                    ? "Resultado grande: vista de tabla (" + intel.getGraph().nodeCount() + " entidades)"
+                    : message + " · vista de tabla");
+        } else {
+            canvas.relayout();
+            if (message != null) statusRight.setText(message);
+        }
     }
 
     private void removeEntity(String key) {
@@ -1003,9 +1041,9 @@ public class MainWindow {
                 body.run();
             } finally {
                 Platform.runLater(() -> {
-                    if (onFxDone != null) onFxDone.run();
                     refreshAll();
                     statusRight.setText("Listo");
+                    if (onFxDone != null) onFxDone.run();
                 });
             }
         }, "orion-task");

@@ -54,7 +54,7 @@ java -jar orion-app/target/estoa.jar --demo
 ## Tests
 
 - Every behavior change needs a test. `mvn test` must pass before a pull request.
-- The suite currently has 69 JUnit 5 tests across 14 suites.
+- The suite currently has 72 JUnit 5 tests across 14 suites.
 - For UI changes, include a screenshot from `--demo --screenshot` if possible.
 
 ## Pull requests
