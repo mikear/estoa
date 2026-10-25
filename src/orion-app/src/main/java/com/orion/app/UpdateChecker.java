@@ -26,12 +26,14 @@ import java.util.regex.Pattern;
 /**
  * Comprueba la última release pública en GitHub y avisa sin descargar ni
  * ejecutar nada. La comprobación automática se cachea 24 h en ~/.orion.
+ * «Más tarde» silencia esa versión durante 7 días.
  */
 public final class UpdateChecker {
 
     private static final String API_URL =
             "https://api.github.com/repos/mikear/estoa/releases/latest";
     private static final long CHECK_INTERVAL_MS = 24L * 60L * 60L * 1000L;
+    private static final long SNOOZE_MS = 7L * 24L * 60L * 60L * 1000L;
     private static final Path CACHE =
             Path.of(System.getProperty("user.home"), ".orion", "update.properties");
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -56,9 +58,7 @@ public final class UpdateChecker {
             }
         }).thenAccept(update -> Platform.runLater(() -> {
             if (update.isPresent()) {
-                Release release = update.get();
-                markNotified(release.version());
-                showUpdate(owner, release);
+                showUpdate(owner, update.get());
             } else if (manual) {
                 showInfo(owner);
             }
@@ -72,7 +72,7 @@ public final class UpdateChecker {
             String version = cache.getProperty("latestVersion", "");
             String url = cache.getProperty("url", "");
             if (version.isBlank() || url.isBlank()) return Optional.empty();
-            return isNewer(version) && !version.equals(cache.getProperty("notifiedVersion", ""))
+            return shouldNotify(cache, version, now)
                     ? Optional.of(new Release(version, url))
                     : Optional.empty();
         }
@@ -84,8 +84,14 @@ public final class UpdateChecker {
             cache.setProperty("url", release.url());
         });
         saveCache(cache);
-        return found.filter(release -> manual
-                || !release.version().equals(cache.getProperty("notifiedVersion", "")));
+        return found.filter(release -> manual || shouldNotify(cache, release.version(), now));
+    }
+
+    static boolean shouldNotify(Properties cache, String version, long now) {
+        if (!isNewer(version)) return false;
+        if (version.equals(cache.getProperty("notifiedVersion", ""))) return false;
+        return !version.equals(cache.getProperty("snoozeVersion", ""))
+                || now >= longProp(cache, "snoozeUntil");
     }
 
     static Optional<Release> fetch(URI uri) throws IOException, InterruptedException {
@@ -165,7 +171,17 @@ public final class UpdateChecker {
 
     private static void markNotified(String version) {
         Properties properties = loadCache();
+        properties.remove("snoozeVersion");
+        properties.remove("snoozeUntil");
         properties.setProperty("notifiedVersion", version);
+        saveCache(properties);
+    }
+
+    private static void snooze(String version) {
+        Properties properties = loadCache();
+        properties.setProperty("snoozeVersion", version);
+        properties.setProperty("snoozeUntil",
+                Long.toString(System.currentTimeMillis() + SNOOZE_MS));
         saveCache(properties);
     }
 
@@ -180,7 +196,10 @@ public final class UpdateChecker {
                 + "Descarga la nueva versión desde la página de la release.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == download) {
+            markNotified(release.version());
             open(release.url());
+        } else {
+            snooze(release.version());
         }
     }
 

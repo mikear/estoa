@@ -178,7 +178,7 @@ The release workflow builds on Windows, Linux, and macOS Intel. Windows installe
 
 ## Update notifications
 
-Estoa checks the latest public GitHub release at most once every 24 hours. When a newer version exists, it shows the version and a button that opens the release page. It never downloads or installs an update automatically.
+Estoa checks the latest public GitHub release at most once every 24 hours. When a newer version exists, it shows the version and a button that opens the release page. **Later** snoozes that version for 7 days. It never downloads or installs an update automatically.
 
 - Manual check: **Ayuda → Buscar actualizaciones...**
 - The only startup network request is the GitHub Releases API.

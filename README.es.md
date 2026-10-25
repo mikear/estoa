@@ -178,7 +178,7 @@ El workflow de release compila en Windows, Linux y macOS Intel. El instalador de
 
 ## Avisos de actualización
 
-Estoa consulta la última release pública de GitHub como máximo una vez cada 24 horas. Si hay una versión nueva, muestra el número y un botón que abre la página de la release. Nunca descarga ni instala una actualización automáticamente.
+Estoa consulta la última release pública de GitHub como máximo una vez cada 24 horas. Si hay una versión nueva, muestra el número y un botón que abre la página de la release. **Más tarde** pospone el aviso de esa versión durante 7 días. Nunca descarga ni instala una actualización automáticamente.
 
 - Comprobación manual: **Ayuda → Buscar actualizaciones...**
 - La única petición de red al arrancar es la API de releases de GitHub.

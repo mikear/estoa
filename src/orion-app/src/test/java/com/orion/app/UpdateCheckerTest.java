@@ -7,6 +7,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,6 +48,25 @@ class UpdateCheckerTest {
     @Test
     void versionCompiladaNoEsDev() {
         assertEquals("1.0.0", BuildInfo.version());
+    }
+
+    @Test
+    void snoozeSilenciaSoloLaVersionAplazada() {
+        Properties cache = new Properties();
+        cache.setProperty("snoozeVersion", "1.1.0");
+        cache.setProperty("snoozeUntil", "2000");
+        assertFalse(UpdateChecker.shouldNotify(cache, "1.1.0", 1000));
+        assertTrue(UpdateChecker.shouldNotify(cache, "1.1.0", 2001));
+        assertTrue(UpdateChecker.shouldNotify(cache, "1.2.0", 1000));
+    }
+
+    @Test
+    void versionNotificadaNoSeRepite() {
+        Properties cache = new Properties();
+        cache.setProperty("notifiedVersion", "1.1.0");
+        assertFalse(UpdateChecker.shouldNotify(cache, "1.1.0", 1000));
+        assertTrue(UpdateChecker.shouldNotify(cache, "1.2.0", 1000));
+        assertFalse(UpdateChecker.shouldNotify(cache, "1.0.0", 1000));
     }
 
     private static Optional<UpdateChecker.Release> fetch(String json) throws Exception {

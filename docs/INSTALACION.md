@@ -84,7 +84,7 @@ Opciones útiles:
 
 ## 4. Actualizaciones
 
-Estoa consulta la última release pública de GitHub como máximo una vez cada 24 horas. Si hay una versión nueva, muestra un aviso con las opciones **Descargar** y **Más tarde**. **Descargar** abre la página de la release en el navegador; no descarga ni instala nada automáticamente.
+Estoa consulta la última release pública de GitHub como máximo una vez cada 24 horas. Si hay una versión nueva, muestra un aviso con las opciones **Descargar** y **Más tarde**. **Descargar** abre la página de la release en el navegador; no descarga ni instala nada automáticamente. **Más tarde** pospone el aviso de esa versión durante 7 días.
 
 - Comprobación manual: **Ayuda → Buscar actualizaciones...**
 - Caché: `~/.orion/update.properties` (solo metadatos de versión).

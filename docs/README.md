@@ -41,7 +41,7 @@ Estoa --demo     # caso de demostración completo
 Estoa            # aplicación normal
 ```
 
-Estoa comprueba si hay una release nueva como máximo una vez al día y ofrece abrir la página de descarga; nunca instala automáticamente. Se puede desactivar con `--no-update-check`.
+Estoa comprueba si hay una release nueva como máximo una vez al día y ofrece abrir la página de descarga; **Más tarde** pospone el aviso 7 días y nunca instala automáticamente. Se puede desactivar con `--no-update-check`.
 
 Para compilar desde código se requiere JDK 21+ y Maven. Detalles en [INSTALACION.md](INSTALACION.md).
 
