@@ -44,9 +44,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install wixtoolset --version=3.14.1 -y --no-progress
-          $bin = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin' -Directory |
+          $bin = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin' -Directory -ErrorAction SilentlyContinue |
             Select-Object -First 1
+          if (-not $bin) {
+            choco install wixtoolset -y --no-progress
+            $bin = Get-ChildItem 'C:\Program Files (x86)\WiX Toolset*\bin' -Directory |
+              Select-Object -First 1
+          }
           if (-not $bin) { throw 'No se encontro el directorio bin de WiX' }
           $bin.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
