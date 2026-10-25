@@ -1,0 +1,80 @@
+name: Bug report
+description: Something does not work as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Before continuing, check
+        the [documentation](https://github.com/mikear/estoa/blob/main/docs/README.md)
+        and search existing issues.
+
+        Do not paste API keys, case data, or personal information.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Where does it happen?
+      options:
+        - Graph canvas
+        - Table or tree view
+        - ATT&CK or adjacency matrix
+        - A connector or transform
+        - Reports
+        - Persistence (H2 or PostgreSQL)
+        - Packaging or launcher
+        - Documentation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Estoa version
+      description: "`Estoa --version` or the About dialog."
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Windows 11 23H2, Ubuntu 24.04, macOS 14"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1. Open Estoa with ...
+        2. Add the observable ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Remove secrets and personal data first.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and this is not a duplicate
+        - label: I removed API keys, case data, and personal information from this report
+        - label: This is not a security vulnerability (those go through SECURITY.md)
+          required: true

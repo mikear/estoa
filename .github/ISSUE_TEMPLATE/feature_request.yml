@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest a connector, transform, view, or workflow
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first, then the solution you have in mind. Check the
+        [roadmap](https://github.com/mikear/estoa#roadmap) and existing issues
+        before opening a new one.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: "I cannot pivot from a certificate to its related domains because..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Connector
+        - Transform
+        - Graph or UI
+        - Correlation
+        - ATT&CK
+        - Reports
+        - Persistence
+        - Packaging
+        - Documentation
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and discussions
+          required: true
+        - label: This does not require telemetry or silent network calls
+          required: true

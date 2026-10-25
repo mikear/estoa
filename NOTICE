@@ -1,0 +1,43 @@
+Estoa
+Copyright (c) 2026 mikear
+
+Third-party notices
+
+MITRE ATT&CK
+------------
+The embedded bundle at src/orion-sources/src/main/resources/attack/attack.json is
+a curated subset of the MITRE ATT&CK project (Enterprise tactics, selected
+techniques and groups). It is not the full Enterprise matrix.
+
+Copyright The MITRE Corporation. Licensed under CC BY 4.0.
+https://attack.mitre.org/
+
+Tabler Icons
+------------
+The icon set used by the desktop UI is based on Tabler Icons.
+Copyright Paweł Kuna. Licensed under the MIT License.
+https://tabler.io/icons
+
+OpenJFX
+-------
+JavaFX is licensed under the GNU General Public License v2 with the Classpath
+Exception. https://openjfx.io/
+
+Spring Boot
+-----------
+Licensed under the Apache License 2.0. https://spring.io/projects/spring-boot
+
+H2 Database
+-----------
+Licensed under the Mozilla Public License 2.0 (or the EPL 1.0).
+https://www.h2database.com/
+
+PostgreSQL JDBC Driver
+----------------------
+Licensed under the BSD 2-Clause License.
+https://jdbc.postgresql.org/
+
+OpenPDF
+-------
+Licensed under the GNU Lesser General Public License 2.1.
+https://github.com/LibrePDF/OpenPDF

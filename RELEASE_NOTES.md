@@ -1,6 +1,6 @@
 # Notas de la versión — Estoa v1.0.0
 
-**Fecha:** 2026-10-24 · **Estado:** primera release pública · **Desarrollo:** [mikear](https://github.com/mikear)
+**Fecha:** 2026-10-25 · **Estado:** primera release pública · **Desarrollo:** [mikear](https://github.com/mikear)
 
 ## Resumen
 
@@ -89,7 +89,7 @@ Los paquetes incluyen el runtime. Solo se necesita Java 21+ para compilar desde 
 
 ## QA
 
-- 67 pruebas JUnit 5 en verde.
+- 69 pruebas JUnit 5 en verde (14 suites).
 - Smoke gráfico automático: 30 PNG del recorrido completo de la GUI + informe PDF de demostración.
 - App-image de Windows validada sin Java externo: arranque, caso demo y 30 capturas.
 - Escaneo de los artefactos empaquetados para comprobar que no incluyen rutas, bases locales ni claves del equipo de desarrollo.

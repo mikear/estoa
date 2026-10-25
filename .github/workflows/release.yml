@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,6 +12,7 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -31,10 +33,10 @@ jobs:
             package: bash packaging/package.sh
             artifact: estoa-macos
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -62,13 +64,17 @@ jobs:
 
       - name: Build
         working-directory: src
-        run: mvn -B clean package -DskipTests ${{ matrix.profile }}
+        run: mvn -B -ntp clean package -DskipTests ${{ matrix.profile }}
+
+      - name: Smoke test
+        working-directory: src
+        run: java -jar orion-app/target/estoa.jar --version
 
       - name: Empaquetar
         run: ${{ matrix.package }}
 
       - name: Subir artefactos
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact }}
           path: dist/*
@@ -77,11 +83,12 @@ jobs:
   release:
     name: Publicar release
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
