@@ -34,8 +34,13 @@ public class OrionUi extends Application {
 
     @Override
     public void init() {
-        DataSource ds = DataSourceFactory.fromEnvironment(
-                Path.of(System.getProperty("user.home"), ".orion", "orion.db"));
+        // demo y capturas usan una base en memoria: nunca escriben en los casos reales
+        boolean efimera = getParameters().getUnnamed().stream()
+                .anyMatch(p -> p.equals("--demo") || p.equals("--screenshot"));
+        DataSource ds = efimera
+                ? DataSourceFactory.h2Memory()
+                : DataSourceFactory.fromEnvironment(
+                        Path.of(System.getProperty("user.home"), ".orion", "orion.db"));
         PersistenceService persistence = new PersistenceService(ds);
         intel = new IntelService(persistence);
 

@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Logger;
 
 /**
  * Almacen de claves de API cifradas con AES-256-GCM. La clave maestra se
@@ -28,11 +29,14 @@ public class ApiKeyManager {
     private static final String CIPHER = "AES/GCM/NoPadding";
     private static final int IV_LEN = 12;
     private static final int TAG_BITS = 128;
+    private static final Logger LOG = Logger.getLogger(ApiKeyManager.class.getName());
 
     private final Path keyFile;
     private final Path storeFile;
     private final SecretKey masterKey;
     private final Map<String, String> keys = new TreeMap<>();
+    /** Entradas que no se pudieron descifrar; se reescriben tal cual. */
+    private final Map<String, String> unreadable = new TreeMap<>();
     private final SecureRandom random = new SecureRandom();
 
     public ApiKeyManager() {
@@ -101,10 +105,14 @@ public class ApiKeyManager {
         for (String line : Files.readAllLines(storeFile)) {
             int eq = line.indexOf('=');
             if (eq <= 0) continue;
+            String service = line.substring(0, eq);
+            String raw = line.substring(eq + 1);
             try {
-                keys.put(line.substring(0, eq), decrypt(line.substring(eq + 1)));
-            } catch (Exception ignored) {
-                // entrada corrupta: se ignora
+                keys.put(service, decrypt(raw));
+            } catch (Exception e) {
+                // sin la clave maestra correcta no se puede leer: se conserva cifrada
+                unreadable.put(service, raw);
+                LOG.warning("Clave ilegible en el almacén (¿ORION_KEYSTORE_PASS distinta?): " + service);
             }
         }
     }
@@ -118,6 +126,12 @@ public class ApiKeyManager {
                 throw ioe;
             } catch (Exception ce) {
                 throw new IOException("Fallo cifrando la clave de " + e.getKey(), ce);
+            }
+        }
+        // conservar las entradas ilegibles evita destruirlas al guardar otra clave
+        for (Map.Entry<String, String> e : unreadable.entrySet()) {
+            if (!keys.containsKey(e.getKey())) {
+                sb.append(e.getKey()).append('=').append(e.getValue()).append('\n');
             }
         }
         Files.writeString(storeFile, sb.toString());
@@ -146,7 +160,9 @@ public class ApiKeyManager {
 
     public synchronized void setKey(String service, String apiKey) {
         if (service == null || apiKey == null || apiKey.isBlank()) return;
-        keys.put(service.trim().toLowerCase(), apiKey.trim());
+        String s = service.trim().toLowerCase();
+        keys.put(s, apiKey.trim());
+        unreadable.remove(s);
         try {
             saveStore();
         } catch (IOException e) {
@@ -164,7 +180,9 @@ public class ApiKeyManager {
     }
 
     public synchronized void deleteKey(String service) {
-        keys.remove(service.trim().toLowerCase());
+        String s = service.trim().toLowerCase();
+        keys.remove(s);
+        unreadable.remove(s);
         try {
             saveStore();
         } catch (IOException ignored) {

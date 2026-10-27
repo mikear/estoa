@@ -15,6 +15,10 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import javax.sql.DataSource;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,46 +42,65 @@ public class PersistenceService {
     public record LoadedCase(Investigation investigation, OrionGraph graph) {}
 
     private final DataSource ds;
-    private final boolean isPostgres;
 
     public PersistenceService(DataSource ds) {
         this.ds = ds;
         try (Connection c = ds.getConnection()) {
-            this.isPostgres = c.getMetaData().getDatabaseProductName().toLowerCase().contains("postgresql");
             Schema.init(c);
+            restrictH2File(c);
         } catch (SQLException e) {
             throw new IllegalStateException("No se pudo inicializar el esquema: " + e.getMessage(), e);
         }
     }
 
+    /** Deja el fichero H2 solo para el usuario; en Windows los permisos del perfil ya aplican. */
+    private static void restrictH2File(Connection c) {
+        try {
+            String url = c.getMetaData().getURL();
+            if (url == null || !url.startsWith("jdbc:h2:") || url.contains(":mem:")) return;
+            Path db = Path.of(url.substring("jdbc:h2:".length()).split(";")[0] + ".mv.db");
+            if (!Files.getFileStore(db.getParent()).supportsFileAttributeView(PosixFileAttributeView.class)) return;
+            Files.setPosixFilePermissions(db, PosixFilePermissions.fromString("rw-------"));
+        } catch (Exception ignored) {
+            // sin permisos POSIX o fichero aun sin crear: no hay nada que restringir
+        }
+    }
+
     public void save(Investigation inv, OrionGraph graph) {
         String json = serializeCase(inv, graph);
-        String sql = isPostgres ? """
+        boolean nuevo = inv.getVersion() == 0;
+        String sql = nuevo ? """
                 INSERT INTO investigations (id, name, description, status, priority, analyst, classification,
-                                            tags, created_at, updated_at, graph_json)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description,
-                  status=EXCLUDED.status, priority=EXCLUDED.priority, analyst=EXCLUDED.analyst,
-                  classification=EXCLUDED.classification, tags=EXCLUDED.tags,
-                  created_at=EXCLUDED.created_at, updated_at=EXCLUDED.updated_at, graph_json=EXCLUDED.graph_json
+                                            tags, created_at, updated_at, version, graph_json)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 """ : """
-                MERGE INTO investigations (id, name, description, status, priority, analyst, classification,
-                                           tags, created_at, updated_at, graph_json)
-                KEY (id) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                UPDATE investigations SET name=?, description=?, status=?, priority=?, analyst=?,
+                  classification=?, tags=?, created_at=?, updated_at=?, version=?, graph_json=?
+                WHERE id=? AND version=?
                 """;
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, inv.getId());
-            ps.setString(2, inv.getName());
-            ps.setString(3, inv.getDescription());
-            ps.setString(4, inv.getStatus().name());
-            ps.setString(5, inv.getPriority().name());
-            ps.setString(6, inv.getAnalyst());
-            ps.setString(7, inv.getClassification());
-            ps.setString(8, String.join(",", inv.getTags()));
-            ps.setTimestamp(9, Timestamp(inv.getCreatedAt()));
-            ps.setTimestamp(10, Timestamp(inv.getUpdatedAt()));
-            ps.setString(11, json);
-            ps.executeUpdate();
+            int i = 1;
+            if (nuevo) ps.setString(i++, inv.getId());
+            ps.setString(i++, inv.getName());
+            ps.setString(i++, inv.getDescription());
+            ps.setString(i++, inv.getStatus().name());
+            ps.setString(i++, inv.getPriority().name());
+            ps.setString(i++, inv.getAnalyst());
+            ps.setString(i++, inv.getClassification());
+            ps.setString(i++, String.join(",", inv.getTags()));
+            ps.setTimestamp(i++, Timestamp(inv.getCreatedAt()));
+            ps.setTimestamp(i++, Timestamp(inv.getUpdatedAt()));
+            ps.setInt(i++, inv.getVersion() + 1);
+            ps.setString(i++, json);
+            if (!nuevo) {
+                ps.setString(i++, inv.getId());
+                ps.setInt(i, inv.getVersion());
+            }
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalStateException(
+                        "El caso fue modificado por otro analista. Vuelve a abrirlo antes de guardar.");
+            }
+            inv.setVersion(inv.getVersion() + 1);
         } catch (SQLException e) {
             throw new IllegalStateException("No se pudo guardar el caso: " + e.getMessage(), e);
         }
@@ -115,13 +138,15 @@ public class PersistenceService {
     }
 
     public Optional<LoadedCase> load(String id) {
-        String sql = "SELECT id, name, description, status, priority, analyst, classification, tags, created_at, updated_at, graph_json FROM investigations WHERE id = ?";
+        String sql = "SELECT id, name, description, status, priority, analyst, classification, tags, created_at, updated_at, version, graph_json FROM investigations WHERE id = ?";
         try (Connection c = ds.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return Optional.empty();
                 Investigation inv = new Investigation(rs.getString("id"), rs.getString("name"));
                 setCommon(inv, rs);
+                // un caso guardado antes de existir la columna tiene versión 0: cuenta como 1
+                inv.setVersion(Math.max(1, rs.getInt("version")));
                 String json = rs.getString("graph_json");
                 OrionGraph graph = json == null ? new OrionGraph() : deserializeGraph(json);
                 if (json != null) {

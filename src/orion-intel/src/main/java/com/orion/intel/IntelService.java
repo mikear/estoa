@@ -102,11 +102,27 @@ public class IntelService {
         if (node.isEmpty()) {
             return new TransformResult(false, transformId, "Entidad no encontrada: " + entityKey, 0);
         }
-        OrionEntity input = node.get().getEntity();
-        TransformResult result = transforms.run(transformId, input, new TransformContext(sources));
-        mergeIntoGraph(result, input);
-        currentCase.touch();
+        TransformResult result = fetchTransform(node.get().getEntity(), transformId);
+        mergeTransform(entityKey, result);
         return result;
+    }
+
+    /**
+     * Ejecuta la transformacion sin tocar el grafo. Se puede llamar desde un
+     * hilo de trabajo; el resultado se fusiona luego con {@link #mergeTransform}.
+     */
+    public TransformResult fetchTransform(OrionEntity input, String transformId) {
+        if (input == null) return new TransformResult(false, transformId, "Entidad no encontrada", 0);
+        return transforms.run(transformId, input, new TransformContext(sources));
+    }
+
+    /** Fusiona un resultado ya calculado. Solo desde el hilo de la interfaz. */
+    public void mergeTransform(String entityKey, TransformResult result) {
+        if (result == null) return;
+        Optional<GraphNode> node = graph.node(entityKey);
+        if (node.isEmpty()) return;
+        mergeIntoGraph(result, node.get().getEntity());
+        currentCase.touch();
     }
 
     private void mergeIntoGraph(TransformResult result, OrionEntity input) {

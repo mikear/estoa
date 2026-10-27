@@ -6,12 +6,16 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Motor de correlacion: ejecuta las reglas habilitadas sobre el grafo del
  * caso y sintetiza hallazgos en hipotesis de investigacion accionables.
  */
 public class CorrelationEngine {
+
+    private static final Logger LOG = Logger.getLogger(CorrelationEngine.class.getName());
 
     /** Resultado de una corrida del motor. */
     public record CorrelationReport(List<Finding> findings, List<Hypothesis> hypotheses) {
@@ -39,8 +43,9 @@ public class CorrelationEngine {
             if (!r.isEnabled()) continue;
             try {
                 findings.addAll(r.evaluate(graph));
-            } catch (Exception ignored) {
-                // una regla defectuosa no debe tumbar la corrida
+            } catch (Exception ex) {
+                // una regla defectuosa no debe tumbar la corrida, pero deja rastro
+                LOG.log(Level.WARNING, "Regla de correlación " + r.id() + " falló", ex);
             }
         }
         return new CorrelationReport(findings, synthesize(findings));

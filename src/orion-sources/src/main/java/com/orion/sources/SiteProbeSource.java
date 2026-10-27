@@ -6,7 +6,6 @@ import com.orion.core.model.OrionEntity;
 import com.orion.core.model.RelationshipType;
 import com.orion.core.util.JsonUtil;
 
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -91,7 +90,7 @@ public class SiteProbeSource implements SourceConnector {
         if (host.isEmpty()) {
             return SourceResult.error(id(), "URL sin host: " + target);
         }
-        if (isInternal(host)) {
+        if (Http.isInternalHost(host)) {
             return SourceResult.error(id(), "Destino interno no permitido: " + host);
         }
 
@@ -290,20 +289,6 @@ public class SiteProbeSource implements SourceConnector {
         return s.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
                 .replace("&quot;", "\"").replace("&#39;", "'").replace("&nbsp;", " ")
                 .replaceAll("\\s+", " ").trim();
-    }
-
-    private static boolean isInternal(String host) {
-        try {
-            for (InetAddress a : InetAddress.getAllByName(host)) {
-                if (a.isAnyLocalAddress() || a.isLoopbackAddress() || a.isLinkLocalAddress()
-                        || a.isSiteLocalAddress() || a.isMulticastAddress()) {
-                    return true;
-                }
-            }
-        } catch (Exception ignored) {
-            return false;
-        }
-        return false;
     }
 
     private static String sha256(byte[] data) throws Exception {

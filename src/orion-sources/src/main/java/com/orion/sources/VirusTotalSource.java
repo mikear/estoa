@@ -102,6 +102,11 @@ public class VirusTotalSource implements SourceConnector {
         if (com.orion.core.util.NetUtil.isIpv4(v) || com.orion.core.util.NetUtil.isIpv6(v)) return "ip_addresses/" + v;
         if (com.orion.core.util.NetUtil.isHash(v)) return "files/" + v.toLowerCase();
         if (com.orion.core.util.NetUtil.isDomain(v)) return "domains/" + com.orion.core.util.NetUtil.normalizeDomain(v);
+        if (com.orion.core.util.NetUtil.isUrl(v)) {
+            // VT identifica la URL por su base64url sin relleno
+            return "urls/" + java.util.Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(v.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
         return null;
     }
 }

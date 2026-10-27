@@ -107,6 +107,9 @@ public class MainWindow {
         this.intel = intel;
         this.plugins = plugins == null ? java.util.List.of() : plugins;
         buildUi();
+        stage.setOnCloseRequest(e -> {
+            if (!saveOrWarn()) e.consume();
+        });
     }
 
     private void buildUi() {
@@ -450,10 +453,21 @@ public class MainWindow {
         MenuItem exit = new MenuItem("Salir");
         exit.setGraphic(Icons.ui("x", 14));
         exit.setOnAction(e -> {
-            intel.saveCase();
-            Platform.exit();
+            if (saveOrWarn()) stage.close();
         });
         return exit;
+    }
+
+    /** Guarda el caso; si falla, avisa y devuelve false para no cerrar la ventana. */
+    private boolean saveOrWarn() {
+        try {
+            intel.saveCase();
+            return true;
+        } catch (RuntimeException ex) {
+            showInfo("No se pudo guardar el caso",
+                    ex.getMessage() + "\nLa ventana sigue abierta para no perder el trabajo.");
+            return false;
+        }
     }
 
     private ToolBar buildToolbar() {
@@ -486,7 +500,10 @@ public class MainWindow {
         searchField = new TextField();
         searchField.setPromptText("Buscar en el grafo (Ctrl+F)");
         searchField.setPrefWidth(180);
-        searchField.textProperty().addListener((o, a, b) -> highlightSearch(b));
+        // teclear no debe repintar el lienzo en cada pulsacion
+        javafx.animation.PauseTransition pausa = new javafx.animation.PauseTransition(javafx.util.Duration.millis(250));
+        pausa.setOnFinished(ev -> highlightSearch(searchField.getText()));
+        searchField.textProperty().addListener((o, a, b) -> pausa.playFromStart());
 
         layoutCombo = new ComboBox<>();
         layoutCombo.getItems().addAll(LayoutType.values());
@@ -930,14 +947,9 @@ public class MainWindow {
     private void runBestTransforms(String key) {
         GraphNode node = intel.getGraph().node(key).orElse(null);
         if (node == null) return;
-        List<Transform> transforms = intel.transforms().forInput(node.getEntity().getType())
-                .stream().filter(t -> !t.requiresApiKey()).toList();
-        canvas.stopLiveLayout();
-        runAsync("Enriqueciendo " + node.getEntity().getLabel(), () -> {
-            for (Transform t : transforms) {
-                intel.applyTransform(key, t.id());
-            }
-        }, this::relayoutOrTable);
+        List<String> ids = intel.transforms().forInput(node.getEntity().getType())
+                .stream().filter(t -> !t.requiresApiKey()).map(Transform::id).toList();
+        runTransforms(key, ids);
     }
 
     private void runAllTransformsOnSelected() {
@@ -952,17 +964,13 @@ public class MainWindow {
     private void runAllTransforms(String key) {
         GraphNode node = intel.getGraph().node(key).orElse(null);
         if (node == null) return;
-        List<Transform> transforms = intel.transforms().forInput(node.getEntity().getType());
-        if (transforms.isEmpty()) {
+        List<String> ids = intel.transforms().forInput(node.getEntity().getType())
+                .stream().map(Transform::id).toList();
+        if (ids.isEmpty()) {
             showInfo("Transformaciones", "No hay transformaciones para " + node.getEntity().getType().label() + ".");
             return;
         }
-        canvas.stopLiveLayout();
-        runAsync("Ejecutando " + transforms.size() + " transformaciones", () -> {
-            for (Transform t : transforms) {
-                intel.applyTransform(key, t.id());
-            }
-        }, this::relayoutOrTable);
+        runTransforms(key, ids);
     }
 
     private void runTransformOnSelected(String transformId) {
@@ -975,27 +983,48 @@ public class MainWindow {
     }
 
     private void runTransform(String key, String transformId) {
+        runTransforms(key, List.of(transformId));
+    }
+
+    /**
+     * Las transformaciones se ejecutan en segundo plano y se fusionan en el
+     * grafo desde el hilo de la interfaz: el grafo tiene un solo escritor.
+     */
+    private void runTransforms(String key, List<String> transformIds) {
+        GraphNode node = intel.getGraph().node(key).orElse(null);
+        if (node == null || transformIds.isEmpty()) return;
+        OrionEntity input = node.getEntity();
+        OrionGraph caso = intel.getGraph();
         canvas.stopLiveLayout();
-        statusRight.setText("Ejecutando " + transformId + "...");
+        statusRight.setText("Ejecutando " + transformIds.size() + " transformación(es)...");
         Thread worker = new Thread(() -> {
-            TransformResult result;
+            List<TransformResult> results = new ArrayList<>();
             try {
-                result = intel.applyTransform(key, transformId);
+                for (String id : transformIds) results.add(intel.fetchTransform(input, id));
             } catch (RuntimeException e) {
-                Platform.runLater(() -> statusRight.setText("Transformación fallida: " + e.getMessage()));
+                String msg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+                Platform.runLater(() -> statusRight.setText("Transformación fallida: " + msg));
                 return;
             }
             Platform.runLater(() -> {
+                if (intel.getGraph() != caso) {
+                    statusRight.setText("Resultado descartado: el caso cambió durante la transformación");
+                    return;
+                }
+                StringBuilder resumen = new StringBuilder();
+                for (TransformResult r : results) {
+                    intel.mergeTransform(key, r);
+                    if (r.getMessage() != null && !r.getMessage().isBlank()) {
+                        if (resumen.length() > 0) resumen.append(" · ");
+                        resumen.append(r.getMessage());
+                    }
+                }
                 refreshAll();
-                relayoutOrTable(result.getMessage());
+                relayoutOrTable(resumen.length() == 0 ? null : resumen.toString());
             });
         }, "orion-task");
         worker.setDaemon(true);
         worker.start();
-    }
-
-    private void relayoutOrTable() {
-        relayoutOrTable(null);
     }
 
     private void relayoutOrTable(String message) {
@@ -1022,12 +1051,24 @@ public class MainWindow {
 
     private void removeEntities(Collection<String> keys) {
         if (keys == null || keys.isEmpty()) return;
+        if (!confirmDelete(keys.size())) return;
         for (String key : List.copyOf(keys)) {
             intel.removeEntity(key);
         }
         intel.rescoreAll();
         canvas.select(null);
         refreshAll();
+    }
+
+    private boolean confirmDelete(int count) {
+        ButtonType eliminar = new ButtonType("Eliminar", ButtonBar.ButtonData.OK_DONE);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                "Se eliminan " + count + (count == 1 ? " entidad" : " entidades")
+                        + " y sus relaciones del caso.", eliminar, ButtonType.CANCEL);
+        alert.initOwner(stage);
+        alert.setTitle("Eliminar del caso");
+        alert.setHeaderText(null);
+        return alert.showAndWait().filter(b -> b == eliminar).isPresent();
     }
 
     private void runAsync(String taskName, Runnable body) {
@@ -1037,15 +1078,18 @@ public class MainWindow {
     private void runAsync(String taskName, Runnable body, Runnable onFxDone) {
         statusRight.setText(taskName + "...");
         Thread worker = new Thread(() -> {
+            String error = null;
             try {
                 body.run();
-            } finally {
-                Platform.runLater(() -> {
-                    refreshAll();
-                    statusRight.setText("Listo");
-                    if (onFxDone != null) onFxDone.run();
-                });
+            } catch (RuntimeException e) {
+                error = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
             }
+            final String failure = error;
+            Platform.runLater(() -> {
+                refreshAll();
+                statusRight.setText(failure == null ? "Listo" : taskName + " falló: " + failure);
+                if (failure == null && onFxDone != null) onFxDone.run();
+            });
         }, "orion-task");
         worker.setDaemon(true);
         worker.start();
@@ -1259,9 +1303,11 @@ public class MainWindow {
         chooser.setTitle("Carpeta de destino del informe");
         File f = chooser.showDialog(stage);
         if (f == null) return;
+        // el modelo se construye en el hilo de la interfaz: el grafo no se comparte
+        ReportModel model = buildReportModel();
         runAsync("Generando informe " + type.label() + " (" + format.name() + ")", () -> {
             try {
-                new ReportGenerator().generate(type, format, buildReportModel(),
+                new ReportGenerator().generate(type, format, model,
                         f.toPath().resolve(ReportGenerator.filename(type, format)));
             } catch (Exception e) {
                 throw new RuntimeException(e);

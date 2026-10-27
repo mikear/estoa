@@ -70,6 +70,17 @@ class PersistenceTest {
     }
 
     @Test
+    void saveRejectsStaleVersion() {
+        PersistenceService p = new PersistenceService(DataSourceFactory.h2Memory());
+        Investigation inv = new Investigation("Caso versionado");
+        p.save(inv, new OrionGraph());
+        Investigation otroAnalista = p.load(inv.getId()).orElseThrow().investigation();
+
+        p.save(inv, new OrionGraph());
+        assertThrows(IllegalStateException.class, () -> p.save(otroAnalista, new OrionGraph()));
+    }
+
+    @Test
     void corruptJsonDegradesGracefully() {
         PersistenceService p = new PersistenceService(DataSourceFactory.h2Memory());
         OrionGraph g = p.deserializeGraph("{\"entities\": \"no es un array\"}");

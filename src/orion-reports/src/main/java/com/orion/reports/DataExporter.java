@@ -98,6 +98,10 @@ public class DataExporter {
     private String csvField(String s) {
         if (s == null) return "";
         String v = s.replace("\"", "\"\"");
+        // Excel ejecuta como formula todo valor que empiece por = + - @
+        if (!v.isEmpty() && "=+-@\t\r".indexOf(v.charAt(0)) >= 0) {
+            v = "'" + v;
+        }
         if (v.contains(",") || v.contains(";") || v.contains("\n") || v.contains("\"")) {
             return '"' + v + '"';
         }

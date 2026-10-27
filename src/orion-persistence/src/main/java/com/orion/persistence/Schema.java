@@ -22,8 +22,12 @@ final class Schema {
               tags TEXT,
               created_at TIMESTAMP,
               updated_at TIMESTAMP,
+              version INTEGER DEFAULT 0,
               graph_json TEXT
             )""",
+            "ALTER TABLE investigations ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 0",
+            // casos guardados antes de existir la columna: cuentan como versión 1
+            "UPDATE investigations SET version = 1 WHERE version = 0",
             """
             CREATE TABLE IF NOT EXISTS ioc_history (
               id VARCHAR(64) PRIMARY KEY,

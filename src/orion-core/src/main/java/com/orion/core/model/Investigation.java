@@ -29,6 +29,8 @@ public class Investigation {
     private final List<String> notes = new ArrayList<>();
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
+    /** Versión del registro en la base; 0 = caso nunca guardado. */
+    private int version;
 
     public Investigation(String name) {
         this("CASE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(), name);
@@ -99,6 +101,8 @@ public class Investigation {
     public List<String> getNotes() { return notes; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public int getVersion() { return version; }
+    public void setVersion(int version) { this.version = Math.max(0, version); }
 
     /** Restaura las fechas originales al cargar un caso persistido. */
     public void restoreTimestamps(Instant createdAt, Instant updatedAt) {

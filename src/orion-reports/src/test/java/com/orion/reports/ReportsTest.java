@@ -86,6 +86,25 @@ class ReportsTest {
     }
 
     @Test
+    void csvNeutralizesFormulaPrefixes() {
+        // un valor que empieza por = se ejecutaria como formula al abrir el CSV
+        String csv = new DataExporter().csv(ReportType.CASE_SUMMARY, modelWithValue("=1+1"));
+        assertTrue(csv.contains("'=1+1"));
+        assertFalse(csv.contains(",=1+1"));
+    }
+
+    private ReportModel modelWithValue(String value) {
+        OrionGraph g = new OrionGraph();
+        g.addEntity(OrionEntity.of(EntityType.INDICATOR, value));
+        RiskScoringService.CaseRisk risk = new RiskScoringService().caseSummary(g);
+        AttackMatrixService matrix = new AttackMatrixService();
+        var report = new CorrelationEngine().run(g);
+        return new ReportModel(new Investigation("Caso CSV"), g, risk,
+                matrix.actorProfiles(g), matrix.matrix(g), report.findings(), report.hypotheses(),
+                "Estoa 1.0 (test)", java.time.Instant.now());
+    }
+
+    @Test
     void jsonContainsGraphStructure() {
         String json = new DataExporter().json(ReportType.CASE_SUMMARY, demoModel());
         assertTrue(json.contains("\"entities\""));

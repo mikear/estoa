@@ -106,29 +106,43 @@ public final class DomainTransforms {
     }
 
     /** Ejecuta varias operaciones de varios conectores y agrega el resultado. */
-    /** Ejecuta varias operaciones de varios conectores y agrega el resultado. */
     static TransformResult collect(TransformContext ctx, OrionEntity input, String title, Operation... ops) {
         long start = System.currentTimeMillis();
-        java.util.List<OrionEntity> entities = new java.util.ArrayList<>();
-        java.util.List<com.orion.core.model.EdgeDraft> edges = new java.util.ArrayList<>();
-        StringBuilder summary = new StringBuilder();
-        for (Operation op : ops) {
-            for (var connector : ctx.sources().forOperation(op)) {
-                try {
-                    com.orion.sources.SourceResult sr = connector.query(com.orion.sources.SourceQuery.of(op, input.getValue()));
-                    entities.addAll(sr.getEntities());
-                    edges.addAll(sr.getEdges());
-                    summary.append(connector.name()).append(": ").append(sr.getMessage()).append("; ");
-                } catch (Exception e) {
-                    summary.append(connector.name()).append(": fallo (").append(e.getMessage()).append("); ");
+        java.util.List<String> names = new java.util.ArrayList<>();
+        java.util.List<java.util.concurrent.Future<com.orion.sources.SourceResult>> pending = new java.util.ArrayList<>();
+        // las fuentes no dependen entre si: en serie el transform se eterniza
+        try (var pool = java.util.concurrent.Executors.newFixedThreadPool(4)) {
+            for (Operation op : ops) {
+                for (var connector : ctx.sources().forOperation(op)) {
+                    names.add(connector.name());
+                    pending.add(pool.submit(() -> connector.query(
+                            com.orion.sources.SourceQuery.of(op, input.getValue()))));
                 }
             }
+            java.util.List<OrionEntity> entities = new java.util.ArrayList<>();
+            java.util.List<com.orion.core.model.EdgeDraft> edges = new java.util.ArrayList<>();
+            StringBuilder summary = new StringBuilder();
+            for (int i = 0; i < pending.size(); i++) {
+                String name = names.get(i);
+                try {
+                    com.orion.sources.SourceResult sr = pending.get(i).get();
+                    entities.addAll(sr.getEntities());
+                    edges.addAll(sr.getEdges());
+                    summary.append(name).append(": ").append(sr.getMessage()).append("; ");
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    summary.append(name).append(": interrumpido; ");
+                } catch (Exception e) {
+                    Throwable cause = e.getCause() == null ? e : e.getCause();
+                    summary.append(name).append(": fallo (").append(cause.getMessage()).append("); ");
+                }
+            }
+            String msg = summary.isEmpty() ? "Sin fuentes capaces de resolver la operación"
+                    : summary.substring(0, Math.min(400, summary.length()));
+            TransformResult result = new TransformResult(true, "multi", msg, System.currentTimeMillis() - start);
+            entities.forEach(result::entity);
+            edges.forEach(result::edge);
+            return result;
         }
-        String msg = summary.isEmpty() ? "Sin fuentes capaces de resolver la operación"
-                : summary.substring(0, Math.min(400, summary.length()));
-        TransformResult result = new TransformResult(true, "multi", msg, System.currentTimeMillis() - start);
-        entities.forEach(result::entity);
-        edges.forEach(result::edge);
-        return result;
     }
 }
