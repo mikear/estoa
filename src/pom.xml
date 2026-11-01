@@ -36,7 +36,7 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spring-boot.version>3.3.4</spring-boot.version>
-    <javafx.version>21.0.4</javafx.version>
+    <javafx.version>27.0.1</javafx.version>
     <javafx.classifier>linux</javafx.classifier>
     <openpdf.version>1.3.43</openpdf.version>
     <junit.version>5.10.2</junit.version>
